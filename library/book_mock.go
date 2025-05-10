@@ -33,6 +33,20 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
+// Get mocks base method.
+func (m *MockStorage) Get(id int) Book {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", id)
+	ret0, _ := ret[0].(Book)
+	return ret0
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockStorageMockRecorder) Get(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorage)(nil).Get), id)
+}
+
 // GetAllBooks mocks base method.
 func (m *MockStorage) GetAllBooks() ([]Book, error) {
 	m.ctrl.T.Helper()
@@ -46,4 +60,49 @@ func (m *MockStorage) GetAllBooks() ([]Book, error) {
 func (mr *MockStorageMockRecorder) GetAllBooks() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllBooks", reflect.TypeOf((*MockStorage)(nil).GetAllBooks))
+}
+
+// GetBooksByAuthor mocks base method.
+func (m *MockStorage) GetBooksByAuthor(author string) ([]Book, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBooksByAuthor", author)
+	ret0, _ := ret[0].([]Book)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBooksByAuthor indicates an expected call of GetBooksByAuthor.
+func (mr *MockStorageMockRecorder) GetBooksByAuthor(author interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBooksByAuthor", reflect.TypeOf((*MockStorage)(nil).GetBooksByAuthor), author)
+}
+
+// GetBooksByName mocks base method.
+func (m *MockStorage) GetBooksByName(name string) ([]Book, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBooksByName", name)
+	ret0, _ := ret[0].([]Book)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBooksByName indicates an expected call of GetBooksByName.
+func (mr *MockStorageMockRecorder) GetBooksByName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBooksByName", reflect.TypeOf((*MockStorage)(nil).GetBooksByName), name)
+}
+
+// Save mocks base method.
+func (m *MockStorage) Save(book Book) (Book, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Save", book)
+	ret0, _ := ret[0].(Book)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Save indicates an expected call of Save.
+func (mr *MockStorageMockRecorder) Save(book interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockStorage)(nil).Save), book)
 }

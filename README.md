@@ -305,3 +305,94 @@ go test -v ./library -run=TestBookService_GetAll
 PASS
 ok      unit-testing-go/library 0.001s
 ```
+```go
+....
+type Book struct {
+	ID int
+	Name string
+	Author string
+	Count int
+}
+
+type Storage interface {
+	GetAllBooks() ([]Book, error)
+	GetBooksByAuthor(author string) ([]Book, error) 
+	Get(id int) Book
+	Save(book Book) (Book, error)
+}
+
+func (s *BookService) GetByID(id int) Book {
+	book := s.storage.Get(id)
+	book.Count += 1
+	book, _ = s.storage.Save(book)
+	return book
+}
+....
+```
+```
+mockgen -source ./library/book.go -destination ./library/book_mock.go -package library
+```
+```go
+func TestBookService_GetByID(t *testing.T) {
+
+	type args struct {
+		id int
+	}
+
+	type want struct {
+	   	book Book
+	}
+   	tests := []struct{
+	   	name string
+	   	prepare func(*MockStorage)
+	   	args args
+		want want
+   	}{
+	   	{
+		   	name: "get book by id",
+		   	prepare: func(ms *MockStorage) {
+				ms.EXPECT().Get(1).Times(1).Return(Book{ID: 1, Name: "example 1", Author: "author 1", Count: 1})
+				ms.EXPECT().
+					Save(Book{ID: 1, Name: "example 1", Author: "author 1", Count: 2}).
+					Return(Book{ID: 1, Name: "example 1", Author: "author 1", Count: 2}, nil)
+		   	},
+			args: args{
+				id: 1,
+			},
+		   	want: want {
+			   	book: Book{ID: 1, Name: "example 1", Author: "author 1", Count: 2},
+		   	},
+	   	},
+
+   	}	
+   	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+   
+			ctrl := gomock.NewController(t)
+		   	defer ctrl.Finish()
+   
+		   	mockStorage := NewMockStorage(ctrl)
+		   
+		   	service := &BookService {
+			   	storage: mockStorage,
+		   	}
+		   	tt.prepare(mockStorage)
+
+		   	got := service.GetByID(tt.args.id)
+		   	if !reflect.DeepEqual(got, tt.want.book) {
+			   	t.Errorf("got isn't equal want: %v, %v:", got, tt.want.book)
+		   	}
+	   	})
+   	}
+
+}
+```
+```
+go test -v ./library -run=TestBookService_GetByID
+=== RUN   TestBookService_GetByID
+=== RUN   TestBookService_GetByID/get_book_by_id
+--- PASS: TestBookService_GetByID (0.00s)
+    --- PASS: TestBookService_GetByID/get_book_by_id (0.00s)
+PASS
+ok      unit-testing-go/library 0.002s
+```
