@@ -13,7 +13,8 @@ func BookEqual(b1, b2 *Book) bool {
 
 type Storage interface {
 	GetAllBooks() ([]Book, error)
-	GetBooksByAuthor(author string) ([]Book, error) 
+	GetBooksByAuthor(author string) ([]Book, error)
+	GetBooksByName(name string) ([]Book, error)
 	Get(id int) Book
 	Save(book Book) (Book, error)
 }

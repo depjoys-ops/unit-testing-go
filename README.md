@@ -396,3 +396,136 @@ go test -v ./library -run=TestBookService_GetByID
 PASS
 ok      unit-testing-go/library 0.002s
 ```
+
+### 🛠 Get go-sqlmock
+```
+go-sqlmock uses regular expressions to match SQL queries
+go get github.com/DATA-DOG/go-sqlmock
+```
+```go
+...
+type Storage interface {
+	GetAllBooks() ([]Book, error)
+	GetBooksByAuthor(author string) ([]Book, error)
+	GetBooksByName(name string) ([]Book, error)
+	Get(id int) Book
+	Save(book Book) (Book, error)
+}
+...
+```
+```go
+package library
+
+import "database/sql"
+
+type SQLStorage struct {
+	db *sql.DB
+}
+
+...
+
+func (s *SQLStorage) GetBooksByName(name string) ([]Book, error) {
+	query := "select id, name, author, cnt from books where author = ?"
+	rows, err := s.db.Query(query, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res = make([]Book, 0)
+	for rows.Next() {
+		var book Book
+		err = rows.Scan(&book.ID, &book.Name, &book.Author, &book.Count)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, book)
+	}
+	
+	return res, nil
+}
+
+...
+
+```
+```go
+package library
+
+import (
+	"database/sql"
+	"reflect"
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+)
+
+func TestSQLStorage_GetBooksByName(t *testing.T){
+	type fields struct {
+		db *sql.DB
+	}
+	type args struct {
+		name string
+	}
+	type want struct {
+		books []Book
+		err error
+	}
+	tests := []struct{
+		name string
+		fields fields
+		args args
+		want want
+	}{
+		{
+			name: "success get books by name",
+			fields: fields{
+				db: func (t *testing.T) *sql.DB {
+					db, mock, err := sqlmock.New()
+					if err != nil {
+						t.FailNow()
+					}
+
+					mock.
+						ExpectQuery("select id, name, author, cnt from books where author = ?").
+						WithArgs("example 1").
+						WillReturnRows(sqlmock.NewRows([]string{"id", "name", "author", "cnt"}).AddRow("1", "example 1", "author 1", 1))
+					
+
+					return db
+				}(t),
+			},
+			args: args{
+				name: "example 1",
+			},
+			want: want{
+				books: []Book{{ID: 1, Name: "example 1", Author: "author 1", Count: 1}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &SQLStorage{
+				db: tt.fields.db,
+			}
+			got, err := s.GetBooksByName(tt.args.name)
+			if err != nil {
+				t.Errorf("GetBooksByName() error = %v, wantErr %v", err, tt.want.err)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want.books) {
+				t.Errorf("GetBooksByName() got = %v, want = %v", got, tt.want.books)
+			}
+		})
+	}
+
+}
+```
+```
+go test -v ./library -run=TestSQLStorage_GetBooksByName
+=== RUN   TestSQLStorage_GetBooksByName
+=== RUN   TestSQLStorage_GetBooksByName/success_get_books_by_name
+--- PASS: TestSQLStorage_GetBooksByName (0.00s)
+    --- PASS: TestSQLStorage_GetBooksByName/success_get_books_by_name (0.00s)
+PASS
+ok      unit-testing-go/library (cached)
+```
