@@ -1,6 +1,6 @@
 ## unit-testing-go
 
-```
+```go
 package library 
 
 type Book struct {
@@ -12,7 +12,7 @@ func BookEqual(b1, b2 *Book) bool {
 	return b1.Author == b2.Author && b1.Name == b2.Name
 }
 ```
-```
+```go
 package library
 
 import (
@@ -40,7 +40,7 @@ ok      unit-testing-go/library 0.001s
 
 ### Using Table Tests
 
-```
+```go
 func TestBookEqual(t *testing.T){
 	type args struct {
 		b1, b2 *Book
@@ -102,7 +102,7 @@ ok      unit-testing-go/library 0.002s
 
 ### Mock objects and prepare data
 
-```
+```go
 package library 
 
 type Book struct {
@@ -126,7 +126,7 @@ func (s *BookService) GetAll() ([]Book, error) {
 	return books, nil
 }
 ```
-```
+```go
 package library
 
 import (
@@ -217,4 +217,91 @@ go test -v ./library -run=TestBookService_GetAll
     --- PASS: TestBookService_GetAll/get_all_books_success_two (0.00s)
 PASS
 ok      unit-testing-go/library 0.002s
+```
+
+### 🛠 Install mockgen
+```bash
+go install github.com/golang/mock/mockgen@v1
+
+Show mocks without generate:
+    mockgen -source ./library/book.go
+
+With generate:
+    mockgen -source ./library/book.go -destination ./library/book_mock.go -package library && go mod tidy
+```
+```go
+func TestBookService_GetAll(t *testing.T) {
+
+ 	type want struct {
+		books []Book
+		err error
+	}
+	tests := []struct{
+		name string
+		prepare func(*MockStorage)
+		want want
+	}{
+		{
+			name: "get all books success one",
+			prepare: func(ms *MockStorage) {
+				ms.EXPECT().GetAllBooks().Times(1).Return([]Book{{Name: "example 1", Author: "author 1"}}, nil)
+			},
+			want: want {
+				books: []Book{
+					{Name: "example 1", Author: "author 1"},
+				},
+			},
+		},
+		{
+			name: "get all books success two",
+			prepare: func(ms *MockStorage) {
+				ms.EXPECT().GetAllBooks().Times(1).Return([]Book{
+					{Name: "example 1", Author: "author 1"},
+					{Name: "example 2", Author: "author 2"},
+					}, nil)
+			},
+			want: want {
+				books: []Book{
+					{Name: "example 1", Author: "author 1"},
+					{Name: "example 2", Author: "author 2"},
+				},
+			},
+		},
+
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+	
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+	
+			mockStorage := NewMockStorage(ctrl)
+			
+			service := &BookService {
+				storage: mockStorage,
+			}
+			tt.prepare(mockStorage)
+
+			got, err := service.GetAll()
+			if err != nil && !errors.Is(err, tt.want.err) {
+				t.Errorf("got error, but not expected: %v", err)
+			}
+			if !reflect.DeepEqual(got, tt.want.books) {
+				t.Errorf("got isn't equal want: %v, %v:", got, tt.want.books)
+			}
+		})
+	}
+
+}
+```
+```
+go test -v ./library -run=TestBookService_GetAll
+=== RUN   TestBookService_GetAll
+=== RUN   TestBookService_GetAll/get_all_books_success_one
+=== RUN   TestBookService_GetAll/get_all_books_success_two
+--- PASS: TestBookService_GetAll (0.00s)
+    --- PASS: TestBookService_GetAll/get_all_books_success_one (0.00s)
+    --- PASS: TestBookService_GetAll/get_all_books_success_two (0.00s)
+PASS
+ok      unit-testing-go/library 0.001s
 ```

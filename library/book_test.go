@@ -4,6 +4,8 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+
+	"github.com/golang/mock/gomock"
 )
 
 func TestBookEqual(t *testing.T){
@@ -53,18 +55,6 @@ func TestBookEqual(t *testing.T){
 
 }
 
-type mockStorage struct {
-	books []Book
-}
-
-func (m *mockStorage) GetAllBooks() ([]Book, error) {
-	return m.books, nil
-}
-
-func (m *mockStorage) setBooks(books []Book) {
-	m.books = books
-}
-
 func TestBookService_GetAll(t *testing.T) {
 
  	type want struct {
@@ -73,14 +63,14 @@ func TestBookService_GetAll(t *testing.T) {
 	}
 	tests := []struct{
 		name string
-		prepare func(*mockStorage)
+		prepare func(*MockStorage)
 		want want
 	}{
 		{
 			name: "get all books success one",
-			prepare: func(m *mockStorage) {
-				m.setBooks([]Book{{Name: "example 1", Author: "author 1"}})
-			},	
+			prepare: func(ms *MockStorage) {
+				ms.EXPECT().GetAllBooks().Times(1).Return([]Book{{Name: "example 1", Author: "author 1"}}, nil)
+			},
 			want: want {
 				books: []Book{
 					{Name: "example 1", Author: "author 1"},
@@ -89,12 +79,12 @@ func TestBookService_GetAll(t *testing.T) {
 		},
 		{
 			name: "get all books success two",
-			prepare: func(m *mockStorage) {
-				m.setBooks([]Book{
+			prepare: func(ms *MockStorage) {
+				ms.EXPECT().GetAllBooks().Times(1).Return([]Book{
 					{Name: "example 1", Author: "author 1"},
 					{Name: "example 2", Author: "author 2"},
-				})
-			},	
+					}, nil)
+			},
 			want: want {
 				books: []Book{
 					{Name: "example 1", Author: "author 1"},
@@ -107,12 +97,16 @@ func TestBookService_GetAll(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 	
-			storage := &mockStorage{}
-			service := &BookService {
-				storage: storage,
-			}
-			tt.prepare(storage)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 	
+			mockStorage := NewMockStorage(ctrl)
+			
+			service := &BookService {
+				storage: mockStorage,
+			}
+			tt.prepare(mockStorage)
+
 			got, err := service.GetAll()
 			if err != nil && !errors.Is(err, tt.want.err) {
 				t.Errorf("got error, but not expected: %v", err)
